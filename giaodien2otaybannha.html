@@ -1,601 +1,518 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8"/>
-    <title>Luyện Nói & Đọc Tiếng Tây Ban Nha</title>
+    <meta charset="utf-8"/>
+    <title>Luyện Transcript Tiếng Tây Ban Nha (2 ô)</title>
     <style>
-        /* --- General Layout --- */
-        html, body {
-            height: 100%;
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f4f4;
-            overflow: hidden;
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
+        .container { display: flex; height: 100vh; }
+        .pane { flex: 1; padding: 15px; border-left: 2px solid #ddd; overflow-y: auto; }
+        .pane:first-child { border-left: none; }
+        .player-container { margin-bottom: 15px; }
+        .transcript { max-width: 100%; margin: 0 auto; }
+        .line { padding: 8px; border-bottom: 1px solid #ccc; cursor: pointer; position: relative; outline: none; }
+        .line:hover { background-color: #eef; }
+        .line:focus { box-shadow: 0 0 0 2px #00529B; }
+        .user { font-weight: bold; }
+        .machine { color: gray; margin-left: 10px; }
+        .line[contenteditable="true"] { background-color: #ffffcc; outline: 1px dashed #999; }
+        .highlight { background-color: #d1ecf1 !important; }
+        .record-btn {
+            position: absolute; right: 10px; top: 8px; background: #00529B; color: white;
+            border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
         }
-        #main-container {
-            display: flex;
-            height: 100vh;
+        .result { margin-top: 5px; font-size: 13px; }
+        #toolbar {
+            display: none; position: absolute; background: #fff; border: 1px solid #ccc;
+            padding: 5px; z-index: 1000;
         }
-        .panel {
-            flex: 1;
-            padding: 20px;
-            box-sizing: border-box;
-            overflow: auto;
-            height: 100vh;
-        }
-        #left-panel {
-            background-color: #f8f9fa;
-            border-right: 2px solid #dee2e6;
-        }
-        #right-panel {
-            background-color: #ffffff;
-            resize: horizontal;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        h1, h2 {
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 10px;
-        }
-        button {
-            padding: 8px 16px;
-            margin: 5px 5px 5px 0;
+        #globalTogglePause {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 10px 20px;
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 8px;
             cursor: pointer;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            background-color: #e9ecef;
-            font-family: inherit;
-        }
-        button:hover {
-            background-color: #d8dde2;
-        }
-        .question-block {
-            background: #fff;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        .question-text {
-            font-size: 1.1em;
-            margin-bottom: 10px;
-            padding: 6px;
-            border: 1px dashed transparent;
-        }
-        .question-text[contenteditable="true"]:focus {
-            border: 1px dashed #888;
-            background-color: #f0f8ff;
-            outline: none;
-        }
-        .answer {
-            margin-top: 10px;
-            padding: 10px;
-            background: #e9ecef;
-            border-radius: 5px;
-            min-height: 30px;
-            border: 1px solid #ddd;
-            line-height: 1.6;
-        }
-        .audio-status {
-            display: inline-block;
-            margin-left: 6px;
-            color: green;
+            font-size: 16px;
             font-weight: bold;
-            visibility: hidden;
         }
-        .audio-status.visible {
-            visibility: visible;
-        }
-        input[type="file"] {
-            margin: 10px 0;
-        }
-        textarea {
-            width: 100%;
-            margin-top: 10px;
-            padding: 8px;
-            box-sizing: border-box;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            font-family: inherit;
-        }
-        .model-answer {
-             background-color: #e6ffed;
-        }
-        .score-display {
-            font-weight: bold;
-            color: #0056b3;
-            margin-left: 10px;
-        }
-        #text-area {
-            width: 100%;
-            border: 1px solid #ccc;
-            padding: 10px;
-            font-size: 18px;
-            overflow: auto;
-            box-sizing: border-box;
-            flex-grow: 1;
-        }
-        #controls-right {
-            padding-top: 10px;
-        }
-        #tts-controls {
-            margin-bottom: 10px;
-            background-color: #f8f8f8;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        #tts-controls label {
-            margin-right: 10px;
-        }
-        #speed-slider {
-            vertical-align: middle;
-        }
-        #speed-value {
-            font-weight: bold;
-            color: #333;
-        }
-        .reading-highlight {
-            background-color: rgb(173, 216, 230);
-        }
+        h2, h3 { border-bottom: 1px solid #aaa; padding-bottom: 10px; color: #333; }
     </style>
 </head>
 <body>
 
-<div id="main-container">
-    <div id="left-panel" class="panel">
-        <h1>Hỏi và Đáp - Ghi âm (Tiếng Tây Ban Nha)</h1>
-        <h2>📂 Nhập câu hỏi từ tệp:</h2>
-        <input accept=".docx,.txt" id="file-input" type="file"/>
-        <h2>📥 Nhập Hỏi & Đáp từ ZIP:</h2>
-        <input type="file" id="zip-input" accept=".zip">
-        <div id="questions-container">
-            </div>
-        <button onclick="addNewQuestion()">➕ Thêm câu hỏi mới</button>
-        <button onclick="exportData()">📤 Xuất dữ liệu ra ZIP</button>
-        <button onclick="createNewSession()">➕ Tạo phiên mới</button>
+<div id="toolbar">
+    <button onclick="execCmd('bold')"><b>B</b></button>
+    <button onclick="execCmd('italic')"><i>I</i></button>
+    <button onclick="execCmd('underline')"><u>U</u></button>
+    <input onchange="execCmd('foreColor', this.value)" type="color"/>
+</div>
+
+<div class="container">
+    <div class="pane" id="pane1">
+        <h2>Khung 1 🇵🇭</h2>
+        <div style="margin: 20px auto; max-width: 100%;">
+            <label>🔗 YouTube Video ID: <input class="videoIdInput" style="width: 300px;" type="text" value=""/></label><br/><br/>
+            <label>📝 Phụ đề Tiếng Tây ban nha: <textarea class="scriptFIL" rows="6" style="width: 100%;"></textarea></label><br/><br/>
+            <label>🇻🇳 Phụ đề Tiếng Việt: <textarea class="scriptVI" rows="6" style="width: 100%;"></textarea></label><br/><br/>
+            <br/>
+            <button class="loadBtn">▶️ Tải Video + Phụ đề</button><br/>
+            <button class="saveBtn">💾 Lưu</button>
+            <br/><br/>
+            <label>📂 Tải file đã lưu (.json):
+              <input type="file" class="loadFileInput" accept=".json">
+            </label>
+        </div>
+        <div class="player-container"></div>
+        <h3>Phụ đề (Filipino + Việt)</h3>
+        <div class="transcript"></div>
     </div>
 
-    <div id="right-panel" class="panel">
-        <h1>Dán văn bản Tiếng Tây Ban Nha vào đây để nghe đọc</h1>
-        <div id="text-area" contenteditable="true">
-            Dán văn bản vào đây...
+    <div class="pane" id="pane2">
+        <h2>Khung 2 🇵🇭</h2>
+        <div style="margin: 20px auto; max-width: 100%;">
+            <label>🔗 YouTube Video ID: <input class="videoIdInput" style="width: 300px;" type="text" value=""/></label><br/><br/>
+            <label>📝 Phụ đề Tiếng Filipino: <textarea class="scriptFIL" rows="6" style="width: 100%;"></textarea></label><br/><br/>
+            <label>🇻🇳 Phụ đề Tiếng Việt: <textarea class="scriptVI" rows="6" style="width: 100%;"></textarea></label><br/><br/>
+            <br/>
+            <button class="loadBtn">▶️ Tải Video + Phụ đề</button><br/>
+            <button class="saveBtn">💾 Lưu</button>
+            <br/><br/>
+            <label>📂 Tải file đã lưu (.json):
+              <input type="file" class="loadFileInput" accept=".json">
+            </label>
         </div>
-        <div id="controls-right">
-             <div id="tts-controls">
-                <label for="speed-slider">Tốc độ đọc:</label>
-                <input type="range" id="speed-slider" min="0.5" max="2" value="1" step="0.1">
-                <span id="speed-value">1.0x</span>
-            </div>
-            <button id="read-all">🔊 Đọc toàn bộ</button>
-            <button id="read-current-sentence">🔊 Đọc câu hiện tại</button>
-            <button id="highlight-button">🎨 Tô màu</button>
-            <button id="remove-highlight-button">🗑️ Xóa tô màu</button>
-        </div>
+        <div class="player-container"></div>
+        <h3>Phụ đề (Filipino + Việt)</h3>
+        <div class="transcript"></div>
     </div>
 </div>
-<script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
 
+<button id="globalTogglePause">Play All</button>
+
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-    let spanishTTSVoice = null;
-    let recognition;
-    let mediaRecorder;
-    let audioChunks = [];
-    const audioBlobs = {};
+class TranscriptApp {
+    constructor(paneId) {
+        this.pane = document.getElementById(paneId);
+        if (!this.pane) return;
+        
+        this.player = null;
+        this.transcriptData = [];
+        this.userScrolling = false;
+        this.scrollTimeout = null;
 
-    let currentAnswerIndex = null;
-    let currentAudioIndex = null;
-    let questionCount = 0;
+        this.videoIdInput = this.pane.querySelector('.videoIdInput');
+        this.scriptFIL = this.pane.querySelector('.scriptFIL');
+        this.scriptVI = this.pane.querySelector('.scriptVI');
+        this.transcriptDiv = this.pane.querySelector('.transcript');
+        this.playerContainer = this.pane.querySelector('.player-container');
 
-    let currentPlaybackRate = 1.0;
-    let isReading = false;
-    let currentUtterance = null;
-
-    const highlightColors = ["#ffff99", "#99ccff", "#ffcc99", "#ffcccb", "#ffb6c1", "#98fb98", "#dda0dd", "#c19a6b"];
-    let currentColorIndex = 0;
-
-    function initializeVoices() {
-        const voices = speechSynthesis.getVoices();
-        spanishTTSVoice = voices.find(v => v.name === "Microsoft Elvira Online (Natural) - Spanish (Spain)") || voices.find(v => v.lang === 'es-ES');
-        if (spanishTTSVoice) {
-            console.log("Đã tìm thấy giọng đọc Tiếng Tây Ban Nha:", spanishTTSVoice.name);
-        } else {
-            console.warn("Không tìm thấy giọng đọc Tiếng Tây Ban Nha. Sẽ sử dụng giọng mặc định của trình duyệt.");
+        this.pane.querySelector('.loadBtn').onclick = () => this.loadVideoAndTranscript();
+        this.pane.querySelector('.saveBtn').onclick = () => this.saveScripts();
+        this.pane.querySelector('.loadFileInput').onchange = (event) => this.loadScriptFile(event);
+        
+        this.transcriptDiv.addEventListener('wheel', () => {
+            this.userScrolling = true;
+            clearTimeout(this.scrollTimeout);
+            this.scrollTimeout = setTimeout(() => this.userScrolling = false, 3000);
+        });
+    }
+    
+    onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.PLAYING) {
+            requestAnimationFrame(() => this.trackCurrentLine());
         }
+        updateGlobalPauseButtonState();
     }
 
-    if (!('webkitSpeechRecognition' in window)) {
-        alert('Trình duyệt này không hỗ trợ nhận dạng giọng nói.');
-    } else {
-        recognition = new webkitSpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = false;
-        recognition.lang = 'es-ES';
-        recognition.onresult = function (event) {
-            let transcript = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    transcript += event.results[i][0].transcript;
+    trackCurrentLine() {
+        if (!this.player || typeof this.player.getCurrentTime !== 'function') return;
+        const currentTime = this.player.getCurrentTime();
+        let currentId = null;
+        for (let i = 0; i < this.transcriptData.length; i++) {
+            const line = this.transcriptData[i];
+            if (currentTime >= line.time && (i === this.transcriptData.length - 1 || currentTime < this.transcriptData[i + 1].time)) {
+                currentId = line.id;
+                break;
+            }
+        }
+        this.transcriptDiv.querySelectorAll('.line').forEach(el => el.classList.remove('highlight'));
+        if (currentId && currentId.startsWith('fil_')) {
+            const activeEl = this.transcriptDiv.querySelector('#' + currentId);
+            if (activeEl) {
+                activeEl.classList.add('highlight');
+                if (!this.userScrolling) {
+                    activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }
-            if (currentAnswerIndex !== null && transcript) {
-                const answerBox = document.getElementById(`answer-${currentAnswerIndex}`);
-                answerBox.innerHTML += transcript;
+        }
+        if (this.player.getPlayerState() === YT.PlayerState.PLAYING) {
+            requestAnimationFrame(() => this.trackCurrentLine());
+        }
+    }
+
+    parseTranscript(raw) {
+        const lines = raw.trim().split('\n');
+        const parsed = [];
+        let currentTime = null, currentText = [];
+        for (const line of lines) {
+            const match = line.match(/^(\d+):(\d{2})$/);
+            if (match) {
+                if (currentTime !== null && currentText.length)
+                    parsed.push({ time: currentTime, text: currentText.join('<br>') });
+                currentTime = parseInt(match[1]) * 60 + parseInt(match[2]);
+                currentText = [];
+            } else if(line.trim() !== '') {
+                currentText.push(line.trim());
+            }
+        }
+        if (currentTime !== null && currentText.length)
+            parsed.push({ time: currentTime, text: currentText.join('<br>') });
+        return parsed;
+    }
+
+    createLineCard(id, time, fallbackText, className) {
+        const div = document.createElement('div');
+        div.className = `line ${className}`;
+        div.dataset.time = time;
+        div.id = id;
+        div.innerHTML = fallbackText;
+        div.setAttribute('tabindex', '0');
+
+        div.onclick = () => {
+            if (this.player?.seekTo) {
+                this.player.seekTo(time, true);
+            }
+            div.focus();
+        };
+        
+        div.ondblclick = (e) => {
+            e.currentTarget.contentEditable = true;
+            e.currentTarget.focus();
+        };
+
+        if (className === 'user') {
+            const btn = document.createElement('button');
+            btn.className = 'record-btn';
+            btn.textContent = '🎤';
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                this.startSpeechRecognition(div, fallbackText);
+            };
+            div.appendChild(btn);
+        }
+        return div;
+    }
+
+    loadVideoAndTranscript() {
+        const videoId = this.videoIdInput.value.trim();
+        const rawFIL = this.scriptFIL.value.trim();
+        const rawVI = this.scriptVI.value.trim();
+        
+        if (this.player && typeof this.player.destroy === 'function') {
+            this.player.destroy();
+        }
+
+        const playerDiv = document.createElement('div');
+        const uniquePlayerId = `player_${this.pane.id}`;
+        playerDiv.id = uniquePlayerId;
+        this.playerContainer.innerHTML = '';
+        this.playerContainer.appendChild(playerDiv);
+
+        this.player = new YT.Player(uniquePlayerId, {
+            height: '360',
+            width: '100%',
+            videoId: videoId,
+            events: {
+                'onStateChange': (e) => this.onPlayerStateChange(e)
+            }
+        });
+
+        const fil = this.parseTranscript(rawFIL);
+        const vi = this.parseTranscript(rawVI);
+        this.transcriptDiv.innerHTML = '';
+        this.transcriptData = [];
+        
+        let i_fil = 0, i_vi = 0;
+        
+        while (i_fil < fil.length || i_vi < vi.length) {
+            const line_fil = fil[i_fil];
+            const line_vi = vi[i_vi];
+
+            if (line_fil && (!line_vi || line_fil.time <= line_vi.time)) {
+                const text = `[${Math.floor(line_fil.time / 60)}:${(line_fil.time % 60).toString().padStart(2, '0')}] ${line_fil.text}`;
+                const uniqueId = `fil_${this.pane.id}_${i_fil}`;
+                const div = this.createLineCard(uniqueId, line_fil.time, text, 'user');
+                this.transcriptDiv.appendChild(div);
+                this.transcriptData.push({ id: uniqueId, time: line_fil.time });
+                i_fil++;
+            } else if (line_vi) {
+                 const text = `[VI] ${line_vi.text}`;
+                 const uniqueId = `vi_${this.pane.id}_${i_vi}`;
+                 const div = this.createLineCard(uniqueId, line_vi.time, text, 'machine');
+                 this.transcriptDiv.appendChild(div);
+                 i_vi++;
+            }
+        }
+    }
+
+    saveScripts() {
+        const videoId = this.videoIdInput.value.trim();
+        const lines = this.transcriptDiv.querySelectorAll('.line');
+        const filChunks = [];
+        const viChunks = [];
+    
+        for (const line of lines) {
+            const time = parseInt(line.dataset.time || '0');
+            const minutes = Math.floor(time / 60);
+            const seconds = (time % 60).toString().padStart(2, '0');
+    
+            let content = line.innerHTML
+                .replace(/<button[^>]*>.*?<\/button>/g, '')  
+                .replace(/<div class="result">.*?<\/div>/g, '')  
+                .replace(/<div class="playback-container">.*?<\/div>/g, '')
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/\[\d+:\d+\]/g, '')
+                .replace(/\[VI\]/g, '')
+                .replace(/<[^>]+>/g, '')       
+                .replace(/\n{2,}/g, '\n')      
+                .trim();
+    
+            const block = `${minutes}:${seconds}\n${content}`;
+    
+            if (line.classList.contains('user')) {
+                filChunks.push(block);
+            } else if (line.classList.contains('machine')) {
+                viChunks.push(block);
+            }
+        }
+    
+        const blob = new Blob([JSON.stringify({
+            videoId,
+            filText: filChunks.join('\n\n'),
+            viText: viChunks.join('\n\n')
+        }, null, 2)], { type: 'application/json' });
+    
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `transcript_${videoId || 'video'}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+    
+    loadScriptFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                this.videoIdInput.value = data.videoId || '';
+                this.scriptFIL.value = data.filText || '';
+                this.scriptVI.value = data.viText || '';
+            } catch (err) {
+                alert('File JSON không hợp lệ.');
             }
         };
-        recognition.onerror = function (event) {
-            console.error('Lỗi nhận dạng giọng nói:', event.error);
-        };
+        reader.readAsText(file);
     }
 
-    function startRecognition(index) {
-        currentAnswerIndex = index;
-        if (recognition) recognition.start();
-        startAudioRecording(index);
-    }
+    startSpeechRecognition(div, expectedText) {
+        const existingResult = div.querySelector('.result');
+        if (existingResult) existingResult.remove();
+        const existingPlayback = div.querySelector('.playback-container');
+        if (existingPlayback) existingPlayback.remove();
 
-    function stopRecognition() {
-        if (recognition) recognition.stop();
-        stopAudioRecording();
-    }
-
-    async function startAudioRecording(index) {
-        currentAudioIndex = index;
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
-            mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(audioChunks, { type: 'audio/webm' });
-                audioBlobs[currentAudioIndex] = blob;
-                const audioURL = URL.createObjectURL(blob);
-                const audioElement = document.getElementById(`audio-${currentAudioIndex}`);
-                audioElement.src = audioURL;
-                audioElement.style.display = 'block';
-                showAudioStatus(currentAudioIndex);
-            };
-            mediaRecorder.start();
-        } catch (err) {
-            console.error("Lỗi khi bắt đầu ghi âm:", err);
-            alert("Không thể bắt đầu ghi âm. Vui lòng cấp quyền micro.");
-        }
-    }
-
-    function stopAudioRecording() {
-        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
-        }
-    }
-
-    function playAudio(index) {
-        const audio = document.getElementById(`audio-${index}`);
-        if(audio.src) {
-           audio.play();
-        } else {
-            alert("Chưa có âm thanh nào được ghi cho câu hỏi này.");
-        }
-    }
-
-    function speak(text, textOffset = 0) {
-        if (isReading) {
-            speechSynthesis.cancel();
-        }
-        removeHighlight();
-        const cleanedText = text.trim();
-        if (!cleanedText) {
-            isReading = false;
+        if (!('webkitSpeechRecognition' in window) || !navigator.mediaDevices) {
+            alert('Trình duyệt của bạn không hỗ trợ tính năng này.');
             return;
         }
-        currentUtterance = new SpeechSynthesisUtterance(cleanedText);
-        currentUtterance.lang = 'es-ES';
-        if (spanishTTSVoice) currentUtterance.voice = spanishTTSVoice;
-        currentUtterance.rate = currentPlaybackRate;
-        currentUtterance.onboundary = function(event) {
-            if (event.name === 'word') {
-                const word = currentUtterance.text.substring(event.charIndex, event.charIndex + event.charLength);
-                applyHighlight(word, textOffset + event.charIndex);
-            }
-        };
-        currentUtterance.onstart = () => isReading = true;
-        currentUtterance.onend = () => {
-            isReading = false;
-            removeHighlight();
-            currentUtterance = null;
-        };
-        speechSynthesis.speak(currentUtterance);
-    }
 
-    function speakQuestion(index) {
-        const text = document.querySelector(`.question-block[data-index="${index}"] .question-text`).textContent;
-        speak(text);
-    }
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                const mediaRecorder = new MediaRecorder(stream);
+                const audioChunks = [];
+                mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const playbackContainer = document.createElement('div');
+                    playbackContainer.className = 'playback-container';
+                    const listenButton = document.createElement('button');
+                    listenButton.textContent = '▶️ Nghe lại';
+                    listenButton.style.marginTop = '5px';
+                    listenButton.onclick = () => new Audio(audioUrl).play();
+                    playbackContainer.appendChild(listenButton);
+                    div.appendChild(playbackContainer);
+                };
+                mediaRecorder.start();
 
-    function addNewQuestion() {
-        const container = document.getElementById('questions-container');
-        const index = questionCount;
-        const questionDiv = document.createElement('div');
-        questionDiv.className = 'question-block';
-        questionDiv.setAttribute('data-index', index);
-        questionDiv.innerHTML = `
-            <div class="question-text" contenteditable="true">${index + 1}. </div>
-            <button onclick="speakQuestion(${index})">🔈 Đọc</button>
-            <button onclick="startRecognition(${index})">🎤 Bắt đầu Ghi âm</button>
-            <button onclick="stopRecognition()">🛑 Dừng</button>
-            <button onclick="playAudio(${index})">▶️ Nghe lại</button>
-            <span class="audio-status" id="audio-status-${index}">🔊</span>
-            <div class="answer" id="answer-${index}"></div>
-            <textarea placeholder="✍️ Nhập câu trả lời của bạn ở đây..." style="width: 100%;"></textarea>
-            <textarea class="model-answer" placeholder="✍️ Nhập câu trả lời mẫu ở đây..."></textarea>
-            <button onclick="scoreAnswer(${index})">⭐ Chấm điểm</button>
-            <span class="score-display" id="score-display-${index}"></span>
-            <audio id="audio-${index}" controls style="display: none;"></audio>
-        `;
-        container.appendChild(questionDiv);
-        questionCount++;
-    }
+                const recognition = new webkitSpeechRecognition();
+                recognition.lang = 'es-ES';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+                
+                recognition.onend = () => {
+                    mediaRecorder.stop();
+                    stream.getTracks().forEach(track => track.stop());
+                };
 
-    function showAudioStatus(index) {
-        const statusIcon = document.getElementById(`audio-status-${index}`);
-        if (statusIcon) statusIcon.classList.add("visible");
-    }
-    
-    // --- UTILITY FUNCTIONS (UNCHANGED) ---
-    function createNewSession() { window.open(window.location.pathname + `?id=${Date.now()}_${Math.floor(Math.random() * 100000)}`, '_blank'); }
+                recognition.onresult = (event) => {
+                    const spokenText = event.results[0][0].transcript;
+                    const cleanExpectedText = expectedText.replace(/\[.*?\]/g, '').trim();
+                    const score = this.similarity(spokenText, cleanExpectedText);
+                    const resultEl = document.createElement('div');
+                    resultEl.className = 'result';
+                    resultEl.innerHTML = `Bạn nói: "<em>${spokenText}</em>" → Tương đồng: <b>${Math.round(score * 100)}%</b>`;
+                    div.appendChild(resultEl);
+                };
 
-    document.getElementById("file-input").addEventListener("change", function (event) {
-        const file = event.target.files[0]; if (!file) return;
-        const processQuestions = (questions) => {
-            document.getElementById("questions-container").innerHTML = ''; questionCount = 0;
-            questions.forEach(qText => {
-                if (!qText.trim()) return; addNewQuestion();
-                const newBlock = document.querySelector(`.question-block[data-index="${questionCount-1}"]`);
-                newBlock.querySelector(".question-text").textContent = qText.trim();
+                recognition.onerror = (event) => {
+                    alert('Lỗi nhận dạng giọng nói: ' + event.error);
+                    mediaRecorder.stop();
+                };
+
+                recognition.start();
+            })
+            .catch(err => {
+                alert('Không thể truy cập micro. Vui lòng cấp quyền.');
+                console.error("Lỗi getUserMedia:", err);
             });
-        };
-        if (file.name.endsWith(".txt")) {
-            const reader = new FileReader(); reader.onload = () => processQuestions(reader.result.split(/\r?\n/).filter(Boolean)); reader.readAsText(file);
-        } else if (file.name.endsWith(".docx")) {
-            const reader = new FileReader();
-            reader.onload = (e) => { mammoth.extractRawText({ arrayBuffer: e.target.result }).then(result => processQuestions(result.value.split("\n").filter(Boolean))); };
-            reader.readAsArrayBuffer(file);
-        }
-    });
-
-    function exportData() {
-        const zip = new JSZip(); const blocks = document.querySelectorAll(".question-block"); let qaContent = "";
-        const modelAnswerToken = "[model_answer]"; const answerToken = "Answer:";
-        blocks.forEach((block) => {
-            const index = block.getAttribute('data-index');
-            const question = block.querySelector(".question-text").textContent.trim();
-            const modelAnswer = block.querySelector(".model-answer").value.trim();
-            const voiceAnswer = block.querySelector(".answer").textContent.trim();
-            const typedAnswer = block.querySelector("textarea:not(.model-answer)").value.trim();
-            const finalAnswer = typedAnswer || voiceAnswer;
-            qaContent += `${question}\n`;
-            if (modelAnswer) { qaContent += `${modelAnswerToken}${modelAnswer}\n`; }
-            qaContent += `${answerToken} ${finalAnswer}\n\n`;
-            if (audioBlobs[index]) zip.file(`audio_${parseInt(index) + 1}.webm`, audioBlobs[index]);
-        });
-        zip.file("qa_export.txt", qaContent);
-        const rightPanelHtml = document.getElementById('text-area').innerHTML;
-        if (rightPanelHtml && rightPanelHtml !== 'Dán văn bản vào đây...') { zip.file("reading_text.html", rightPanelHtml); }
-        zip.generateAsync({ type: "blob" }).then(blob => {
-            const url = URL.createObjectURL(blob); const a = document.createElement("a");
-            a.href = url; a.download = `export_session_${Date.now()}.zip`;
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        });
     }
 
-    document.getElementById('zip-input').addEventListener('change', function (event) {
-        const file = event.target.files[0]; if (!file) return;
-        const zip = new JSZip();
-        zip.loadAsync(file).then(async function (zipContent) {
-            const qaFile = zipContent.file("qa_export.txt");
-            if (qaFile) {
-                const qaText = await qaFile.async("string"); const entries = qaText.split('\n\n').filter(Boolean);
-                document.getElementById("questions-container").innerHTML = ''; questionCount = 0;
-                Object.keys(audioBlobs).forEach(key => delete audioBlobs[key]);
-                const modelAnswerToken = "[model_answer]"; const answerToken = "Answer: ";
-                for (const entry of entries) {
-                    const lines = entry.split('\n').filter(Boolean); if (lines.length === 0) continue;
-                    const questionLine = lines[0]; let modelAnswerLine = ''; let answerLine = '';
-                    lines.forEach(line => {
-                        if (line.startsWith(modelAnswerToken)) { modelAnswerLine = line.substring(modelAnswerToken.length); } 
-                        else if (line.startsWith(answerToken)) { answerLine = line.substring(answerToken.length); }
-                    });
-                    addNewQuestion();
-                    const index = questionCount - 1; const qBlock = document.querySelector(`.question-block[data-index="${index}"]`);
-                    qBlock.querySelector(".question-text").textContent = questionLine.trim();
-                    if(modelAnswerLine) qBlock.querySelector(".model-answer").value = modelAnswerLine.trim();
-                    if (answerLine) { qBlock.querySelector("textarea:not(.model-answer)").value = answerLine.trim(); qBlock.querySelector(".answer").textContent = ''; }
-                    const audioFile = zipContent.file(`audio_${index + 1}.webm`);
-                    if (audioFile) {
-                        const blob = await audioFile.async("blob"); audioBlobs[index] = blob;
-                        const audioURL = URL.createObjectURL(blob); const audioElement = qBlock.querySelector("audio");
-                        audioElement.src = audioURL; audioElement.style.display = "block"; showAudioStatus(index);
-                    }
-                }
-            }
-            const readingTextHtmlFile = zipContent.file("reading_text.html");
-            if (readingTextHtmlFile) { document.getElementById('text-area').innerHTML = await readingTextHtmlFile.async("string"); }
-        });
-    });
+    similarity(s1, s2) {
+        const longer = s1.length > s2.length ? s1 : s2;
+        const shorter = s1.length > s2.length ? s2 : s1;
+        const longerLength = longer.length;
+        if (longerLength === 0) return 1.0;
+        return (longerLength - this.editDistance(longer, shorter)) / longerLength;
+    }
 
-    function levenshteinDistance(s1, s2) {
-        const cleanS1 = s1.toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, ''); const cleanS2 = s2.toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, '');
+    editDistance(s1, s2) {
+        s1 = s1.toLowerCase();
+        s2 = s2.toLowerCase();
         const costs = [];
-        for (let i = 0; i <= cleanS1.length; i++) {
+        for (let i = 0; i <= s1.length; i++) {
             let lastValue = i;
-            for (let j = 0; j <= cleanS2.length; j++) {
-                if (i == 0) { costs[j] = j; }
-                else {
-                    if (j > 0) {
-                        let newValue = costs[j - 1];
-                        if (cleanS1.charAt(i - 1) != cleanS2.charAt(j - 1)) { newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1; }
-                        costs[j - 1] = lastValue; lastValue = newValue;
-                    }
+            for (let j = 0; j <= s2.length; j++) {
+                if (i === 0) {
+                    costs[j] = j;
+                } else if (j > 0) {
+                    let newValue = costs[j - 1];
+                    if (s1.charAt(i - 1) !== s2.charAt(j - 1))
+                        newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                    costs[j - 1] = lastValue;
+                    lastValue = newValue;
                 }
             }
-            if (i > 0) costs[cleanS2.length] = lastValue;
+            if (i > 0) costs[s2.length] = lastValue;
         }
-        return costs[cleanS2.length];
+        return costs[s2.length];
     }
+}
 
-    function computeLCS(words1, words2) {
-        const m = words1.length; const n = words2.length; const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
-        for (let i = 1; i <= m; i++) {
-            for (let j = 1; j <= n; j++) {
-                const cleanWord1 = words1[i - 1].toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
-                const cleanWord2 = words2[j - 1].toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
-                if (cleanWord1 === cleanWord2) { dp[i][j] = dp[i - 1][j - 1] + 1; } 
-                else { dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]); }
-            }
-        }
-        return dp;
+// --- GLOBAL CONTROLS AND STATE ---
+
+let app1, app2;
+let currentPaneApp = null;
+
+function onYouTubeIframeAPIReady() {
+    app1 = new TranscriptApp('pane1');
+    app2 = new TranscriptApp('pane2');
+    setupGlobalControls();
+}
+
+function updateGlobalPauseButtonState() {
+    const globalBtn = document.getElementById('globalTogglePause');
+    if (!globalBtn || !app1 || !app2) return;
+
+    const isPlaying1 = app1.player && app1.player.getPlayerState() === YT.PlayerState.PLAYING;
+    const isPlaying2 = app2.player && app2.player.getPlayerState() === YT.PlayerState.PLAYING;
+
+    if (isPlaying1 || isPlaying2) {
+        globalBtn.textContent = 'Pause All';
+    } else {
+        globalBtn.textContent = 'Play All';
     }
+}
 
-    function generateDiff(userWords, modelWords, dp) {
-        let i = userWords.length, j = modelWords.length; const diff = [];
-        while (i > 0 && j > 0) {
-            const cleanUserWord = userWords[i - 1].toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
-            const cleanModelWord = modelWords[j - 1].toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
-            if (cleanUserWord === cleanModelWord) {
-                diff.unshift({ type: 'correct', text: userWords[i - 1] }); i--; j--;
-            } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-                diff.unshift({ type: 'incorrect', text: userWords[i - 1] }); i--;
-            } else { j--; }
+function setupGlobalControls() {
+    const globalBtn = document.getElementById('globalTogglePause');
+    if (!globalBtn) return;
+
+    globalBtn.onclick = () => {
+        if (!app1 || !app2) return;
+
+        const isPlaying1 = app1.player && app1.player.getPlayerState() === YT.PlayerState.PLAYING;
+        const isPlaying2 = app2.player && app2.player.getPlayerState() === YT.PlayerState.PLAYING;
+
+        if (isPlaying1 || isPlaying2) {
+            if (app1.player?.pauseVideo) app1.player.pauseVideo();
+            if (app2.player?.pauseVideo) app2.player.pauseVideo();
+        } else {
+            if (app1.player?.playVideo) app1.player.playVideo();
+            if (app2.player?.playVideo) app2.player.playVideo();
         }
-        while (i > 0) { diff.unshift({ type: 'incorrect', text: userWords[i - 1] }); i--; }
-        return diff;
-    }
-
-    function scoreAnswer(index) {
-        const modelAnswer = document.querySelector(`.question-block[data-index="${index}"] .model-answer`).value.trim();
-        const userAnswerDiv = document.getElementById(`answer-${index}`);
-        const typedAnswer = document.querySelector(`.question-block[data-index="${index}"] textarea:not(.model-answer)`).value.trim();
-        let userAnswer = typedAnswer || userAnswerDiv.textContent.trim();
-        if (typedAnswer) { userAnswerDiv.textContent = typedAnswer; }
-        const scoreDisplay = document.getElementById(`score-display-${index}`);
-        if (!modelAnswer) { alert("Vui lòng nhập câu trả lời mẫu để chấm điểm."); return; }
-        if (!userAnswer) { alert("Vui lòng ghi âm hoặc nhập câu trả lời trước khi chấm điểm."); return; }
-        const distance = levenshteinDistance(modelAnswer, userAnswer); const longerLength = Math.max(modelAnswer.length, userAnswer.length);
-        if (longerLength === 0) { scoreDisplay.textContent = "Điểm: 100%"; }
-        else { const similarity = (1 - (distance / longerLength)) * 100; scoreDisplay.textContent = `Điểm: ${Math.round(similarity)}%`; }
-        
-        const userChars = userAnswer.split(''); const modelChars = modelAnswer.split('');
-        const dp = computeLCS(userChars, modelChars); const diff = generateDiff(userChars, modelChars, dp);
-        const highlightedHtml = diff.map(part => {
-            const color = part.type === 'correct' ? 'green' : 'red';
-            const escapedText = part.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return `<span style="color: ${color};">${escapedText}</span>`;
-        }).join('');
-        userAnswerDiv.innerHTML = highlightedHtml || '';
-    }
-    
-    function getTextContentOfTextArea(textAreaElement) {
-        let textContent = ''; const walker = document.createTreeWalker(textAreaElement, NodeFilter.SHOW_TEXT, null, false);
-        let node; while (node = walker.nextNode()) { textContent += node.nodeValue; } return textContent;
-    }
-
-    function removeHighlight() {
-        const textArea = document.getElementById('text-area');
-        const highlightedSpans = textArea.querySelectorAll('.reading-highlight');
-        highlightedSpans.forEach(span => { span.parentNode.replaceChild(document.createTextNode(span.textContent), span); });
-        textArea.normalize();
-    }
-
-    function applyHighlight(wordText, charIndexInCleanedText) {
-        removeHighlight(); const textArea = document.getElementById('text-area');
-        const startIndex = charIndexInCleanedText; const endIndex = charIndexInCleanedText + wordText.length;
-        const range = document.createRange(); let currentOffset = 0;
-        let startNode = null, endNode = null, startNodeOffset = 0, endNodeOffset = 0;
-        const walker = document.createTreeWalker(textArea, NodeFilter.SHOW_TEXT, null, false);
-        let node;
-        while ((node = walker.nextNode())) {
-            const nodeValue = node.nodeValue;
-            if (currentOffset <= startIndex && (currentOffset + nodeValue.length) > startIndex && startNode === null) {
-                startNode = node; startNodeOffset = startIndex - currentOffset;
-            }
-            if (currentOffset <= endIndex && (currentOffset + nodeValue.length) >= endIndex) {
-                endNode = node; endNodeOffset = endIndex - currentOffset; break;
-            }
-            currentOffset += nodeValue.length;
-        }
-        if (startNode && endNode) {
-            try {
-                range.setStart(startNode, startNodeOffset); range.setEnd(endNode, endNodeOffset);
-                const span = document.createElement('span'); span.className = 'reading-highlight';
-                range.surroundContents(span);
-            } catch (e) { console.error("Lỗi khi tô màu:", e); removeHighlight(); }
-        }
-    }
-
-    document.getElementById("text-area").addEventListener("mouseup", function () {
-        setTimeout(() => {
-            const selection = window.getSelection(); if (selection.isCollapsed) return;
-            let selectedText = selection.toString().trim(); if (selectedText) speak(selectedText);
-        }, 100);
-    });
-
-    document.getElementById("read-all").addEventListener("click", function () {
-        const textArea = document.getElementById("text-area");
-        let fullTextToSpeak = getTextContentOfTextArea(textArea);
-        if (fullTextToSpeak && fullTextToSpeak.trim() !== 'Dán văn bản vào đây...') { speak(fullTextToSpeak); } 
-        else { alert("Không có văn bản để đọc!"); }
-    });
-
-    document.getElementById("read-current-sentence").addEventListener("click", function() {
-        const textArea = document.getElementById('text-area'); const selection = window.getSelection();
-        if (selection.rangeCount === 0) { alert("Vui lòng đặt con trỏ vào vị trí muốn đọc hoặc chọn một đoạn văn bản."); return; }
-        const range = selection.getRangeAt(0); const preCursorRange = document.createRange();
-        preCursorRange.selectNodeContents(textArea); preCursorRange.setEnd(range.startContainer, range.startOffset);
-        const tempDiv = document.createElement('div'); tempDiv.appendChild(preCursorRange.cloneContents());
-        const offsetInFilteredText = getTextContentOfTextArea(tempDiv).length; const fullTextNodes = getTextContentOfTextArea(textArea);
-        let sentenceStart = offsetInFilteredText;
-        while (sentenceStart > 0) {
-            const char = fullTextNodes[sentenceStart - 1]; if ('.?!¡¿'.includes(char) || char === '\n') break;
-            sentenceStart--;
-        }
-        while (sentenceStart < fullTextNodes.length && ' \n.?!¡¿'.includes(fullTextNodes[sentenceStart])) { sentenceStart++; }
-        let sentenceEnd = offsetInFilteredText;
-        while (sentenceEnd < fullTextNodes.length) {
-            const char = fullTextNodes[sentenceEnd];
-            if ('.?!¡¿'.includes(char) || char === '\n') { sentenceEnd++; break; }
-            sentenceEnd++;
-        }
-        let sentenceToRead = fullTextNodes.substring(sentenceStart, sentenceEnd).trim();
-        if (sentenceToRead) { speak(sentenceToRead, sentenceStart); } 
-        else { alert("Không tìm thấy câu để đọc tại vị trí con trỏ."); }
-    });
-
-    document.getElementById("highlight-button").addEventListener("click", function () {
-        const selection = window.getSelection(); if (!selection.rangeCount || selection.isCollapsed) return;
-        const color = highlightColors[currentColorIndex]; document.execCommand('backColor', false, color);
-        currentColorIndex = (currentColorIndex + 1) % highlightColors.length;
-    });
-
-    document.getElementById("remove-highlight-button").addEventListener("click", function () {
-        const selection = window.getSelection(); if (!selection.rangeCount || selection.isCollapsed) return;
-        document.execCommand('backColor', false, 'transparent');
-    });
-
-    const speedSlider = document.getElementById('speed-slider'); const speedValue = document.getElementById('speed-value');
-    speedSlider.addEventListener('input', function() {
-        currentPlaybackRate = parseFloat(this.value);
-        speedValue.textContent = `${currentPlaybackRate.toFixed(1)}x`;
-    });
-    
-    window.onload = () => {
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = initializeVoices;
-        }
-        initializeVoices();
-        document.getElementById("questions-container").innerHTML = '';
-        questionCount = 0;
-        addNewQuestion();
     };
+}
+
+document.addEventListener('focusin', e => {
+    const pane = e.target.closest('.pane');
+    if (pane) {
+        currentPaneApp = pane.id === 'pane1' ? app1 : app2;
+    }
+});
+
+document.addEventListener('mouseup', e => {
+    const sel = window.getSelection();
+    if (sel.toString().length > 0 && e.target.closest('.pane')) {
+        const rect = sel.getRangeAt(0).getBoundingClientRect();
+        const toolbar = document.getElementById('toolbar');
+        toolbar.style.top = `${window.scrollY + rect.top - 40}px`; 
+        toolbar.style.left = `${window.scrollX + rect.left}px`; 
+        toolbar.style.display = 'block';
+    } else {
+        document.getElementById('toolbar').style.display = 'none';
+    }
+});
+
+function execCmd(cmd, value = null) {
+    document.execCommand(cmd, false, value);
+    document.getElementById('toolbar').style.display = 'none';
+    if(currentPaneApp) {
+      currentPaneApp.transcriptDiv.querySelectorAll('[contenteditable=true]').forEach(el => el.contentEditable = false);
+    }
+}
+
+document.addEventListener('keydown', (event) => {
+    if (event.code !== 'Space' || event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        return;
+    }
+
+    const activeElement = document.activeElement;
+
+    if (activeElement && activeElement.classList.contains('line')) {
+        event.preventDefault();
+
+        const time = parseFloat(activeElement.dataset.time);
+        if (isNaN(time)) return;
+
+        const parentPane = activeElement.closest('.pane');
+        if (!parentPane) return;
+
+        const targetApp = (parentPane.id === 'pane1') ? app1 : app2;
+
+        if (targetApp && targetApp.player && typeof targetApp.player.seekTo === 'function') {
+            targetApp.player.seekTo(time, true);
+        }
+    }
+});
 </script>
 </body>
 </html>
