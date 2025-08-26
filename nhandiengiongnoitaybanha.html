@@ -206,7 +206,7 @@
 
     function initializeVoices() {
         const voices = speechSynthesis.getVoices();
-        germanTTSVoice = voices.find(v => v.name === "Microsoft Elvira Online (Natural) - Spanish (Spain)") || voices.find(v => v.name.includes("Jenny") && v.lang === "es-ES");
+        germanTTSVoice = voices.find(v => v.name === "Microsoft Elvira Online (Natural) - Spanish (Spain)") || voices.find(v => v.name.includes("Elvira") && v.lang === "es-ES");
         if (germanTTSVoice) {
             console.log("Successfully found German voice:", germanTTSVoice.name);
         } else {
@@ -828,3 +828,4 @@
 </script>
 </body>
 </html>
+
