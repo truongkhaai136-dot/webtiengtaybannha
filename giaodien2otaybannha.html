@@ -1,24 +1,25 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Luyện Transcript Tiếng Tây Ban Nha (2 ô)</title>
+    <title>Dual Transcript Interface (Press Space to Replay)</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
         .container { display: flex; height: 100vh; }
         .pane { flex: 1; padding: 15px; border-left: 2px solid #ddd; overflow-y: auto; }
         .pane:first-child { border-left: none; }
-        .player-container { margin-bottom: 15px; }
-        .transcript { max-width: 100%; margin: 0 auto; }
+        #player { margin-bottom: 15px; }
+        #transcript { max-width: 100%; margin: 0 auto; }
         .line { padding: 8px; border-bottom: 1px solid #ccc; cursor: pointer; position: relative; outline: none; }
         .line:hover { background-color: #eef; }
-        .line:focus { box-shadow: 0 0 0 2px #00529B; }
+        /* Add a visual indicator when a line is selected */
+        .line:focus { box-shadow: 0 0 0 2px #2196f3; }
         .user { font-weight: bold; }
         .machine { color: gray; margin-left: 10px; }
         .line[contenteditable="true"] { background-color: #ffffcc; outline: 1px dashed #999; }
         .highlight { background-color: #d1ecf1 !important; }
         .record-btn {
-            position: absolute; right: 10px; top: 8px; background: #00529B; color: white;
+            position: absolute; right: 10px; top: 8px; background: #2196f3; color: white;
             border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
         }
         .result { margin-top: 5px; font-size: 13px; }
@@ -32,7 +33,7 @@
             right: 20px;
             z-index: 1000;
             padding: 10px 20px;
-            background-color: #d32f2f;
+            background-color: #f44336;
             color: white;
             border: none;
             border-radius: 8px;
@@ -40,7 +41,7 @@
             font-size: 16px;
             font-weight: bold;
         }
-        h2, h3 { border-bottom: 1px solid #aaa; padding-bottom: 10px; color: #333; }
+        h3 { border-bottom: 1px solid #aaa; padding-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -54,40 +55,40 @@
 
 <div class="container">
     <div class="pane" id="pane1">
-        <h2>Khung 1 🇵🇭</h2>
+        <h2>Pane 1</h2>
         <div style="margin: 20px auto; max-width: 100%;">
             <label>🔗 YouTube Video ID: <input class="videoIdInput" style="width: 300px;" type="text" value=""/></label><br/><br/>
-            <label>📝 Phụ đề Tiếng Tây ban nha: <textarea class="scriptFIL" rows="6" style="width: 100%;"></textarea></label><br/><br/>
-            <label>🇻🇳 Phụ đề Tiếng Việt: <textarea class="scriptVI" rows="6" style="width: 100%;"></textarea></label><br/><br/>
+            <label>📝 English Transcript: <textarea class="scriptEN" rows="6" style="width: 100%;"></textarea></label><br/><br/>
+            <label>🇻🇳 Vietnamese Transcript: <textarea class="scriptVI" rows="6" style="width: 100%;"></textarea></label><br/><br/>
             <br/>
-            <button class="loadBtn">▶️ Tải Video + Phụ đề</button><br/>
-            <button class="saveBtn">💾 Lưu</button>
+            <button class="loadBtn">▶️ Load Video + Transcript</button><br/>
+            <button class="saveBtn">💾 Save Script</button>
             <br/><br/>
-            <label>📂 Tải file đã lưu (.json):
+            <label>📂 Load Saved Script (.json):
               <input type="file" class="loadFileInput" accept=".json">
             </label>
         </div>
         <div class="player-container"></div>
-        <h3>Phụ đề (Filipino + Việt)</h3>
+        <h3>Transcript (EN + VI)</h3>
         <div class="transcript"></div>
     </div>
 
     <div class="pane" id="pane2">
-        <h2>Khung 2 🇵🇭</h2>
+        <h2>Pane 2</h2>
         <div style="margin: 20px auto; max-width: 100%;">
             <label>🔗 YouTube Video ID: <input class="videoIdInput" style="width: 300px;" type="text" value=""/></label><br/><br/>
-            <label>📝 Phụ đề Tiếng Filipino: <textarea class="scriptFIL" rows="6" style="width: 100%;"></textarea></label><br/><br/>
-            <label>🇻🇳 Phụ đề Tiếng Việt: <textarea class="scriptVI" rows="6" style="width: 100%;"></textarea></label><br/><br/>
+            <label>📝 English Transcript: <textarea class="scriptEN" rows="6" style="width: 100%;"></textarea></label><br/><br/>
+            <label>🇻🇳 Vietnamese Transcript: <textarea class="scriptVI" rows="6" style="width: 100%;"></textarea></label><br/><br/>
             <br/>
-            <button class="loadBtn">▶️ Tải Video + Phụ đề</button><br/>
-            <button class="saveBtn">💾 Lưu</button>
+            <button class="loadBtn">▶️ Load Video + Transcript</button><br/>
+            <button class="saveBtn">💾 Save Script</button>
             <br/><br/>
-            <label>📂 Tải file đã lưu (.json):
+            <label>📂 Load Saved Script (.json):
               <input type="file" class="loadFileInput" accept=".json">
             </label>
         </div>
         <div class="player-container"></div>
-        <h3>Phụ đề (Filipino + Việt)</h3>
+        <h3>Transcript (EN + VI)</h3>
         <div class="transcript"></div>
     </div>
 </div>
@@ -107,7 +108,7 @@ class TranscriptApp {
         this.scrollTimeout = null;
 
         this.videoIdInput = this.pane.querySelector('.videoIdInput');
-        this.scriptFIL = this.pane.querySelector('.scriptFIL');
+        this.scriptEN = this.pane.querySelector('.scriptEN');
         this.scriptVI = this.pane.querySelector('.scriptVI');
         this.transcriptDiv = this.pane.querySelector('.transcript');
         this.playerContainer = this.pane.querySelector('.player-container');
@@ -142,7 +143,7 @@ class TranscriptApp {
             }
         }
         this.transcriptDiv.querySelectorAll('.line').forEach(el => el.classList.remove('highlight'));
-        if (currentId && currentId.startsWith('fil_')) {
+        if (currentId && currentId.startsWith('en_')) {
             const activeEl = this.transcriptDiv.querySelector('#' + currentId);
             if (activeEl) {
                 activeEl.classList.add('highlight');
@@ -211,7 +212,7 @@ class TranscriptApp {
 
     loadVideoAndTranscript() {
         const videoId = this.videoIdInput.value.trim();
-        const rawFIL = this.scriptFIL.value.trim();
+        const rawEN = this.scriptEN.value.trim();
         const rawVI = this.scriptVI.value.trim();
         
         if (this.player && typeof this.player.destroy === 'function') {
@@ -233,24 +234,24 @@ class TranscriptApp {
             }
         });
 
-        const fil = this.parseTranscript(rawFIL);
+        const en = this.parseTranscript(rawEN);
         const vi = this.parseTranscript(rawVI);
         this.transcriptDiv.innerHTML = '';
         this.transcriptData = [];
         
-        let i_fil = 0, i_vi = 0;
+        let i_en = 0, i_vi = 0;
         
-        while (i_fil < fil.length || i_vi < vi.length) {
-            const line_fil = fil[i_fil];
+        while (i_en < en.length || i_vi < vi.length) {
+            const line_en = en[i_en];
             const line_vi = vi[i_vi];
 
-            if (line_fil && (!line_vi || line_fil.time <= line_vi.time)) {
-                const text = `[${Math.floor(line_fil.time / 60)}:${(line_fil.time % 60).toString().padStart(2, '0')}] ${line_fil.text}`;
-                const uniqueId = `fil_${this.pane.id}_${i_fil}`;
-                const div = this.createLineCard(uniqueId, line_fil.time, text, 'user');
+            if (line_en && (!line_vi || line_en.time <= line_vi.time)) {
+                const text = `[${Math.floor(line_en.time / 60)}:${(line_en.time % 60).toString().padStart(2, '0')}] ${line_en.text}`;
+                const uniqueId = `en_${this.pane.id}_${i_en}`;
+                const div = this.createLineCard(uniqueId, line_en.time, text, 'user');
                 this.transcriptDiv.appendChild(div);
-                this.transcriptData.push({ id: uniqueId, time: line_fil.time });
-                i_fil++;
+                this.transcriptData.push({ id: uniqueId, time: line_en.time });
+                i_en++;
             } else if (line_vi) {
                  const text = `[VI] ${line_vi.text}`;
                  const uniqueId = `vi_${this.pane.id}_${i_vi}`;
@@ -264,7 +265,7 @@ class TranscriptApp {
     saveScripts() {
         const videoId = this.videoIdInput.value.trim();
         const lines = this.transcriptDiv.querySelectorAll('.line');
-        const filChunks = [];
+        const enChunks = [];
         const viChunks = [];
     
         for (const line of lines) {
@@ -275,7 +276,7 @@ class TranscriptApp {
             let content = line.innerHTML
                 .replace(/<button[^>]*>.*?<\/button>/g, '')  
                 .replace(/<div class="result">.*?<\/div>/g, '')  
-                .replace(/<div class="playback-container">.*?<\/div>/g, '')
+                .replace(/<div class="playback-container">.*?<\/div>/g, '') // Thêm dòng này
                 .replace(/<br\s*\/?>/gi, '\n')
                 .replace(/\[\d+:\d+\]/g, '')
                 .replace(/\[VI\]/g, '')
@@ -286,7 +287,7 @@ class TranscriptApp {
             const block = `${minutes}:${seconds}\n${content}`;
     
             if (line.classList.contains('user')) {
-                filChunks.push(block);
+                enChunks.push(block);
             } else if (line.classList.contains('machine')) {
                 viChunks.push(block);
             }
@@ -294,7 +295,7 @@ class TranscriptApp {
     
         const blob = new Blob([JSON.stringify({
             videoId,
-            filText: filChunks.join('\n\n'),
+            enText: enChunks.join('\n\n'),
             viText: viChunks.join('\n\n')
         }, null, 2)], { type: 'application/json' });
     
@@ -314,16 +315,18 @@ class TranscriptApp {
             try {
                 const data = JSON.parse(e.target.result);
                 this.videoIdInput.value = data.videoId || '';
-                this.scriptFIL.value = data.filText || '';
+                this.scriptEN.value = data.enText || '';
                 this.scriptVI.value = data.viText || '';
+                this.loadVideoAndTranscript(); // auto render transcript after loading file
             } catch (err) {
-                alert('File JSON không hợp lệ.');
+                alert('Invalid JSON file.');
             }
         };
         reader.readAsText(file);
     }
 
     startSpeechRecognition(div, expectedText) {
+        // Xóa kết quả và nút nghe lại cũ
         const existingResult = div.querySelector('.result');
         if (existingResult) existingResult.remove();
         const existingPlayback = div.querySelector('.playback-container');
@@ -334,25 +337,37 @@ class TranscriptApp {
             return;
         }
 
+        // 1. Xin quyền truy cập micro
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
+                // ---- Bắt đầu ghi âm ----
                 const mediaRecorder = new MediaRecorder(stream);
                 const audioChunks = [];
-                mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                // Khi ghi âm dừng, tạo nút nghe lại
                 mediaRecorder.onstop = () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                     const audioUrl = URL.createObjectURL(audioBlob);
+                    
                     const playbackContainer = document.createElement('div');
                     playbackContainer.className = 'playback-container';
+                    
                     const listenButton = document.createElement('button');
-                    listenButton.textContent = '▶️ Nghe lại';
+                    listenButton.textContent = '▶️ Listen Again';
                     listenButton.style.marginTop = '5px';
                     listenButton.onclick = () => new Audio(audioUrl).play();
+                    
                     playbackContainer.appendChild(listenButton);
                     div.appendChild(playbackContainer);
                 };
+                
                 mediaRecorder.start();
 
+                // ---- Bắt đầu nhận dạng giọng nói ----
                 const recognition = new webkitSpeechRecognition();
                 recognition.lang = 'es-ES';
                 recognition.interimResults = false;
@@ -360,29 +375,29 @@ class TranscriptApp {
                 
                 recognition.onend = () => {
                     mediaRecorder.stop();
-                    stream.getTracks().forEach(track => track.stop());
+                    stream.getTracks().forEach(track => track.stop()); // Tắt micro
                 };
 
                 recognition.onresult = (event) => {
                     const spokenText = event.results[0][0].transcript;
                     const cleanExpectedText = expectedText.replace(/\[.*?\]/g, '').trim();
-                    const score = this.similarity(spokenText, cleanExpectedText);
+                    const score = this.similarity(spokenText.toLowerCase(), cleanExpectedText.toLowerCase());
                     const resultEl = document.createElement('div');
                     resultEl.className = 'result';
-                    resultEl.innerHTML = `Bạn nói: "<em>${spokenText}</em>" → Tương đồng: <b>${Math.round(score * 100)}%</b>`;
+                    resultEl.innerHTML = `You said: "<em>${spokenText}</em>" → Similarity: <b>${Math.round(score * 100)}%</b>`;
                     div.appendChild(resultEl);
                 };
 
                 recognition.onerror = (event) => {
-                    alert('Lỗi nhận dạng giọng nói: ' + event.error);
+                    alert('Error occurred in recognition: ' + event.error);
                     mediaRecorder.stop();
                 };
 
                 recognition.start();
             })
             .catch(err => {
-                alert('Không thể truy cập micro. Vui lòng cấp quyền.');
-                console.error("Lỗi getUserMedia:", err);
+                alert('Could not access the microphone. Please grant permission.');
+                console.error("Error accessing microphone:", err);
             });
     }
 
